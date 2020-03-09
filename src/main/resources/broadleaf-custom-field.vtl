@@ -1,0 +1,218 @@
+
+<style>
+  #productResultsDiv{}
+  #myResults{padding:8px 10px 8px 10px;width:530px; height:530px;overflow-x: hidden; overflow-y: auto;}
+  #myResults ul{margin:0;padding:0;font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:16px;}
+  #myResults ul li{position:relative;display:block;list-style:none;height:150px;padding:0;padding:10px 10px 20px 140px;border-bottom:1px dashed #ccc;cursor:pointer;}
+  #myResults ul li:hover{background:#c3e1eb;}
+  #myResults ul li span{display:block;position:absolute;border:1px solid siver;left:10px; top:10px; width:150px; height:150px;}
+  .productThumbnail{width: 200px;overflow: hidden;border: 1px solid #efefef;margin: 0px 0px 10px 0px;padding:10px;}
+  .productTitle{margin: 30px 0;padding:0;}
+</style>
+
+
+<script type="text/javascript">
+var baseUrl = "/broadapi/api/v1";
+var mediaUrl = "https://localhost:8444/admin";
+
+var searchUrl = baseUrl + "/catalog/search";
+var productUrl = baseUrl + "/catalog/product";
+
+    var productIdField = document.getElementById("broadleafProduct");
+
+
+    function baseArgs() {
+        return {
+            method: 'GET',
+
+            redirect: 'follow',
+            cache :'no-cache'
+        }
+    }
+
+    function paintProduct(json){
+
+        var title = json.name
+        var id = json.id;
+        var desc = json.longDescription;
+        var sku = json.defaultSku.id;
+        var picSm = mediaUrl + json.primaryMedia.url;
+
+        if(picSm && picSm.length>0){
+            document.getElementById("productThumbnailDiv").style.display="";
+            document.getElementById("thumbnailImage").src= picSm;
+            document.getElementById("thumbnailImage").style = "border: 0; max-width: 200px; max-height: 200px";
+        }else{
+            document.getElementById("productThumbnailDiv").style.display="none";
+        }
+        if(title){
+            document.getElementById("productTitle").innerHTML="<h3>" + title + "</h3>";
+            document.getElementById("productIdDisplay").innerHTML=  id  ;
+        }
+    }
+    function noProduct(){
+        productIdField.innerHTML="";
+        document.getElementById("productTitle").innerHTML="<h3>n/a</h3>";
+        document.getElementById("productThumbnailDiv").style.display="none";
+
+    }
+
+
+
+
+    function  getProduct(id)   {
+       fetch(productUrl + "/" + id , baseArgs())
+        .then(result => result.json())
+        .then(function (result) {
+            console.log("result", result);
+            paintProduct(result)
+        })
+        .catch(function (error) {
+            console.log('Request failed', error);
+        });
+    }
+
+    dojo.addOnLoad( function(){
+        if(productIdField.value && productIdField.value!=""){
+            getProduct(productIdField.value);
+        }else{
+            noProduct();
+        }
+
+
+
+    });
+    
+
+    function searchClicked(){
+        var mySearch = document.getElementById("inputSearchStrId").value;
+        if(mySearch.length < 1){
+            alert("Please Enter Search Term");
+            document.getElementById('inputSearchStrId').focus();
+            return;
+        }else{
+            
+            document.getElementById("myResults").innerHTML = 'Loading products ...';
+            fetch(searchUrl + "?q="+encodeURIComponent(mySearch), baseArgs())
+            .then(result => result.json())
+            .then(function (json) {
+                dijit.byId('productResultsDiv').show();
+                console.log("search", json)
+                showMyproducts(json);
+
+            })
+            .catch(function (error) {
+                console.log('Request failed', error);
+            });
+        }
+    }
+    function enterPress(e, textarea){
+        var code = (e.keyCode ? e.keyCode : e.which);
+        if(code == 13) { //Enter keycode
+            searchClicked();
+        }
+    }
+
+
+
+
+
+
+
+
+    function showMyproducts(data){
+        var entries = data.products || [];
+        var html = "";
+        if(entries.length==0){
+             html+='<div style="margin:auto">No Results</div>';
+        }else{
+            console.log('got products', entries);
+            html+='<ul>';
+            for (var i = 0; i < entries.length; i++)
+            {
+                var entry = entries[i];
+                var title = entry.name
+                var id = entry.id;
+                var desc = entry.longDescription;
+                var sku = entry.defaultSku.id;
+                var picSm = mediaUrl + entry.primaryMedia.url;
+
+
+                const listItem = `
+                <li onclick="setFields('${id}', '${picSm}');">
+                    <span><img src="${picSm}" style="max-width:125px;max-height:125px;"></span>
+                    <b>${title}</b>
+                    <b>ID: </b>${id}<br>
+                </li>`;
+                html+=listItem;
+            }
+            html+='</ul>';
+        }
+        document.getElementById("myResults").innerHTML = html;
+    }
+    
+    
+    function setFields(id, pictureUrl){
+        dijit.byId('productResultsDiv').hide();
+        productIdField.value=id;
+
+        getProduct(id);
+       // uploadPicture(pictureUrl);
+    }
+
+    function uploadPicture(pictureUrl){
+        if(pictureUrl){
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function() {
+                if (xhr.status == 200) {
+                    paintResults(xhr.responseText);
+                } else {
+                    alert("Error! Upload failed");
+                }
+            };
+            xhr.onerror = function() {
+                alert("Error! Upload failed. Can not connect to server.");
+            };
+
+            var data = {};
+            data.remoteUrl =  pictureUrl;
+            xhr.open("POST", "/api/v1/temp/byUrl");
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhr.send(JSON.stringify(data));
+        }
+    }
+
+    function paintResults(response){
+        var json = JSON.parse(response);
+
+        for(i=0;i<json.tempFiles.length;i++){
+            if(json.tempFiles[i].image){
+                document.getElementById("productThumbnailDiv").innerHTML+="<div style='width:175px;padding:10px;float:right;overflow:hidden;'><img src='"+ json.tempFiles[i].thumbnailUrl + "' style='width:150px;height:150px;border:1px solid silver'><br><a target='newWin' href='" + json.tempFiles[i].referenceUrl+"'>" + json.tempFiles[i].referenceUrl+"</a></div>";
+            }
+        }
+        
+        document.getElementById("responseRaw").innerHTML=JSON.stringify(json,null,2);  
+
+    }
+
+
+
+
+
+</script>
+
+
+<div>
+    <div id="productIdDisplay"></div>
+    <div id="productTitle" class="productTitle"></div>
+    <div  class="productThumbnail" id="productThumbnailDiv"><img src="/html/images/shim.gif" id="thumbnailImage"> </div>
+    <div id="responseRaw"></div>
+
+    <div id="productResultsDiv" dojoType="dijit.Dialog" style="display: none">
+        <div id="myResults"></div>
+    </div>
+    <div>                  
+        <input name="searchStr" id="inputSearchStrId" type="text" dojoType="dijit.form.TextBox" onKeyPress="enterPress(event, this)" style="width:400px;" placeHolder="Search for Products" />
+        <button dojoType="dijit.form.Button" onClick="searchClicked()" iconClass="searchIcon">Find</button>
+    </div>
+</div>

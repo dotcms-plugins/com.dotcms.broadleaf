@@ -24,13 +24,15 @@ To see the api working and to see the data hubspot has on you, call:
 ---
 
 ## Broadleaf Custom Field
-Adds a .vtl under DEFAULT_HOST/application/vtl/broadleaf/
+Adds a .vtl under DEFAULT_HOST/application/vtl/broadleaf/broadleaf-custom-field.vtl
+
+https://github.com/dotCMS-plugins/com.dotcms.broadleaf/blob/master/src/main/resources/broadleaf-custom-field.vtl
 
 ## Installation
 
 Before installing the plugin, you need to change a single line of code and set your broadleaf url/api key
 
-https://github.com/dotCMS-plugins/com.dotcms.broadleaf/blob/master/src/main/resources/broadleaf-custom-field.vtl
+https://github.com/dotCMS-plugins/com.dotcms.broadleaf/blob/master/src/main/resources/plugin.properties
 
 Then build it
 `./gradlew jar`

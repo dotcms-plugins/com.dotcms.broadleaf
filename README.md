@@ -13,11 +13,6 @@ So if you want to call : `http://localhost:8080/broadapi/api/v1/catalog/search?q
 
 instead you should call: `http://localhost:8080/broadapi/api/v1/catalog/product/15`
 
-To see the api working and to see the data hubspot has on you, call:
-
-`https://dotcmssite.com/broadapi/test`
-
-
 
 **Note** this component exposes the broadleaf API based the api key used in the plugin.  This should either be locked down or should modified for use in production environs. 
 
